@@ -1,14 +1,18 @@
 {% extends 'blog/base.html' %}
 
 {% block content %}
-<h1>New post</h1>
+<h1>Offshore Leaks Database</h1>
 <form method="POST" class="post-form">{% csrf_token %}
     {{ form.as_p }}
-    <button type="submit" class="save btn btn-default">Save</button>
 </form>
 
-<hr>
 
+{% for item in text %}
+<pre>
+{% for line in item %}{{ line }}{% endfor %}</pre>
+{% endfor %}
+
+<!--
 {% for post in posts %}
 <div class="post">
     <div class="date">
@@ -20,3 +24,4 @@
 {% endfor %}
 {% endblock content %}
 
+-->

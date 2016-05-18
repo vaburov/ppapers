@@ -6,7 +6,7 @@ class PostForm(forms.ModelForm):
         model = Post
         fields = ('title', 'text',)
 
-class PanamaForm(forms.ModelForm):
-    class Meta:
-        model = Post
-        fields = ('title', 'text',)
+class SearchForm(forms.Form):
+    search = forms.CharField(label='Search:')
+
+
