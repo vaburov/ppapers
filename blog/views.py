@@ -1,17 +1,22 @@
-import csv
 import re
 from django.shortcuts import render
 from django.utils import timezone
 from django.db import models
 from django.shortcuts import render, get_object_or_404
+from .models import MyGlobals
 from .models import Post
 from .forms import PostForm
 from .forms import SearchForm
 from django import forms
 from django.shortcuts import redirect
+import bisect
 
-inittext = 'Please, enter a name or any part of the name.'
-init = True
+def get_index(a, x):
+    'Find leftmost item greater than or equal to x'
+    i = bisect.bisect_left(a, x)
+    if i != len(a):
+        return i
+    raise ValueError
 
 def str_aligned(s1, s2='', tab=20):
     s = s1
@@ -19,70 +24,65 @@ def str_aligned(s1, s2='', tab=20):
 
 # Create your views here.
 def post_list(request):
-    global text, init
-    global csv_officers, csv_intermediaries, csv_entities, csv_addresses, csv_edges
-    global officers, intermediaries, entities, addresses, edges
-    if init:
-        init = False
-        csv_officers       = open('blog/static/Officers.csv', 'rt')
-        csv_intermediaries = open('blog/static/Intermediaries.csv', 'rt')
-        csv_entities       = open('blog/static/Entities.csv', 'rt')
-        csv_addresses      = open('blog/static/Addresses.csv', 'rt')
-        csv_edges          = open('blog/static/all_edges.csv', 'rt')
-
-        officers       = list(csv.reader(csv_officers, delimiter=','))
-        intermediaries = list(csv.reader(csv_intermediaries, delimiter=','))
-        entities       = list(csv.reader(csv_entities, delimiter=','))
-        addresses      = list(csv.reader(csv_addresses, delimiter=','))
-        edges          = list(csv.reader(csv_edges, delimiter=','))
-
     if request.method == "POST":
         form = SearchForm(request.POST)
         if form.is_valid():
             text = []
             name = request.POST.get("search", "");
 
-            for person in officers:
+            for person in MyGlobals.officers:
                 if re.search(name, person[0], re.IGNORECASE):
                     item = []
                     item.append(str_aligned('NAME:', person[0]))
                     item.append(str_aligned('COUNTRY:', person[4]))
 
-                    node_id = person[5]
-                    for link in edges:
-                        node0, node1 = link[0], link[2]
-                        if node_id==node0:
-                            found = False
-                            found_name = ''
+                    node_id = int(person[5])
+                    try: 
+                        i = get_index(MyGlobals.edges, (node_id, "", None))
+                    except: 
+                        i = len(MyGlobals.edges)
 
-                            for asset in entities:
-                                if asset[19]==node1:
-                                    item.append(str_aligned(link[1].upper()+':', asset[0]))
+                    while (i < len(MyGlobals.edges) and MyGlobals.edges[i][0] == node_id):
+                        node0, edge, node1 = MyGlobals.edges[i]
+                        found = False
+                        found_name = ''
+
+                        for asset in MyGlobals.entities:
+                            if asset[19]==str(node1):
+                                item.append(str_aligned(MyGlobals.edges[i][1].upper()+':', asset[0]))
+                                found = True
+                                found_name = asset[0]
+                                break;
+
+                        if not found:
+                            for addr in MyGlobals.addresses:
+                                if addr[5]==str(node1):
+                                    item.append(str_aligned(MyGlobals.edges[i][1].upper()+':', addr[0]))
                                     found = True
-                                    found_name = asset[0]
+                                    found_name = addr[0]
                                     break;
 
-                            if not found:
-                                for addr in addresses:
-                                    if addr[5]==node1:
-                                        item.append(str_aligned(link[1].upper()+':', addr[0]))
-                                        found = True
-                                        found_name = addr[0]
+                        be = MyGlobals.back_edges
+                        try: 
+                            j = get_index(be, (node1, "", None))
+                        except: 
+                            j = len(be)
+                        # search for partners
+                        while (j < len(be) and be[j][0] == node1):
+                            n0, ed, n1 = be[j]
+                            if n1 != node0:
+                                # we found a partner
+                                for partner in MyGlobals.officers:
+                                    if str(n1) == partner[5]:
+                                        item.append(str_aligned("        "+partner[0], '('+ed.upper()+')', 40))
                                         break;
-                            # search for partners
-                            for l in edges:
-                                n0, n1 = l[0], l[2]
-                                if n1 == node1 and n0 != node0:
-                                    # we found a partner
-                                    for partner in officers:
-                                        if n0 == partner[5]:
-                                            item.append(str_aligned("        "+partner[0], '('+l[1].upper()+')', 40))
-                                            break;
+                            j += 1
+                        i += 1
 
                     text.append(item)
 
     else:
-        text = [].append([].append(inittext))
+        text = [].append([].append(MyGlobals.inittext))
 
     form = SearchForm(auto_id=False)
     posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('published_date')
