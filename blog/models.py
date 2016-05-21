@@ -4,6 +4,7 @@ import datetime
 import csv
 
 class MyGlobals(ModelBase):
+
     officers        = tuple(csv.reader(open('/home/vaburov/panamapapers/static/Officers.csv', 'rt'), delimiter=','))
     #intermediaries = tuple(csv.reader(open('/home/vaburov/panamapapers/static/Intermediaries.csv', 'rt'), delimiter=','))
     entities        = tuple(csv.reader(open('/home/vaburov/panamapapers/static/Entities.csv', 'rt'), delimiter=','))

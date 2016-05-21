@@ -6,11 +6,12 @@
     {{ form.as_p }}
 </form>
 
-
+{% autoescape off %}
 {% for item in text %}
 <pre>
 {% for line in item %}{{ line }}{% endfor %}</pre>
 {% endfor %}
+{% endautoescape %}
 
 <!--
 {% for post in posts %}

@@ -11,13 +11,6 @@ from django import forms
 from django.shortcuts import redirect
 import bisect
 
-def get_index(a, x):
-    'Find leftmost item greater than or equal to x'
-    i = bisect.bisect_left(a, x)
-    if i != len(a):
-        return i
-    raise ValueError
-
 def str_aligned(s1, s2='', tab=20):
     s = s1
     return s+' '*max(1, tab-len(s))+s2+'\n'
@@ -33,51 +26,36 @@ def post_list(request):
             for person in MyGlobals.officers:
                 if re.search(name, person[0], re.IGNORECASE):
                     item = []
-                    item.append(str_aligned('NAME:', person[0]))
+                    item.append(str_aligned('<b>NAME:</b>', person[0]))
                     item.append(str_aligned('COUNTRY:', person[4]))
 
                     node_id = int(person[5])
-                    try: 
-                        i = get_index(MyGlobals.edges, (node_id, "", None))
-                    except: 
-                        i = len(MyGlobals.edges)
 
-                    while (i < len(MyGlobals.edges) and MyGlobals.edges[i][0] == node_id):
-                        node0, edge, node1 = MyGlobals.edges[i]
+                    for (node0, edge, node1) in MyGlobals.edges[bisect.bisect_left(MyGlobals.edges, (node_id, "", None)):]:
+                        if node0 != node_id: break
                         found = False
-                        found_name = ''
 
                         for asset in MyGlobals.entities:
                             if asset[19]==str(node1):
-                                item.append(str_aligned(MyGlobals.edges[i][1].upper()+':', asset[0]))
+                                item.append(str_aligned(edge.upper()+':', asset[0]))
                                 found = True
-                                found_name = asset[0]
                                 break;
 
                         if not found:
                             for addr in MyGlobals.addresses:
                                 if addr[5]==str(node1):
-                                    item.append(str_aligned(MyGlobals.edges[i][1].upper()+':', addr[0]))
-                                    found = True
-                                    found_name = addr[0]
+                                    item.append(str_aligned(edge.upper()+':', addr[0]))
                                     break;
 
-                        be = MyGlobals.back_edges
-                        try: 
-                            j = get_index(be, (node1, "", None))
-                        except: 
-                            j = len(be)
                         # search for partners
-                        while (j < len(be) and be[j][0] == node1):
-                            n0, ed, n1 = be[j]
+                        for (n0, ed, n1) in MyGlobals.back_edges[bisect.bisect_left(MyGlobals.back_edges, (node1, "", None)):]:
+                            if n0 != node1: break
                             if n1 != node0:
                                 # we found a partner
                                 for partner in MyGlobals.officers:
                                     if str(n1) == partner[5]:
                                         item.append(str_aligned("        "+partner[0], '('+ed.upper()+')', 40))
                                         break;
-                            j += 1
-                        i += 1
 
                     text.append(item)
 
