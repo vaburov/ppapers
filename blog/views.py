@@ -44,6 +44,16 @@ def post_list(request):
             name_list = []
 
             # search for the candidates
+            """
+            for lastname, name, country, p_id in MyGlobals.lastnames[ bisect.bisect_left(MyGlobals.lastnames, (query.upper(), '', '', None)): ] :
+                if re.search(query.upper(), lastname, re.IGNORECASE):
+                    name_list.append( Person(name +' ' + lastname + ' FAST!', country, p_id))
+                else:
+                    break
+                if len(name_list) >= 50:
+                    break
+            """
+
             for item in MyGlobals.officers:
                 if re.search(query, item[0], re.IGNORECASE):
                     name_list.append( Person(item[0], item[4], int(item[5])) )
@@ -51,28 +61,30 @@ def post_list(request):
                     break
 
             for name in name_list:
-                for (person_id, edge, rel_id) in MyGlobals.edges[bisect.bisect_left(MyGlobals.edges, (name.p_id, "", None)):]:
+                for person_id, edge, rel_id in MyGlobals.edges[bisect.bisect_left(MyGlobals.edges, (name.p_id, '', None)):]:
                     if person_id != name.p_id: break
-                    asset_found = False
-                    for asset in MyGlobals.entities:
-                        if asset[19]==str(rel_id):
-                            ast = Asset( asset[0], rel_id )
 
-                            for (asst_id, ed, partner_id) in MyGlobals.back_edges[bisect.bisect_left(MyGlobals.back_edges, (ast.a_id, "", None)):]:
-                                if asst_id != ast.a_id: break
-                                if partner_id == person_id: continue
-                                p_id, partner_name = MyGlobals.nameid[bisect.bisect_left(MyGlobals.nameid, (partner_id,''))]
-                                if (p_id == partner_id):
-                                    ast.owners.append((partner_name, ed))
-                            name.assets.append(ast)
-                            asset_found = True
-                            break
+                    asset_found = False
+                    for asset_id, asset_name in MyGlobals.entities[bisect.bisect_left(MyGlobals.entities, (rel_id, '') ):]:
+                        if asset_id != rel_id:
+                            break;
+                        ast = Asset( asset_name, rel_id )
+
+                        for asst_id, ed, partner_id in MyGlobals.back_edges[bisect.bisect_left(MyGlobals.back_edges, (ast.a_id, '', None)):]:
+                            if asst_id != ast.a_id: break
+                            if partner_id == person_id: continue
+                            p_id, partner_name = MyGlobals.nameid[bisect.bisect_left(MyGlobals.nameid, (partner_id,''))]
+                            if (p_id == partner_id):
+                                ast.owners.append((partner_name, ed))
+                        name.assets.append(ast)
+                        asset_found = True
+                        break
 
                     if not asset_found:
-                        for address in MyGlobals.addresses:
-                            if address[5]==str(rel_id):
-                               name.address = Address( address[0], int(address[5]) )
-                               for (addr_id, ed, partner_id) in MyGlobals.back_edges[bisect.bisect_left(MyGlobals.back_edges, (name.address.addr_id, "", None)):]:
+                        for addr_id, addr_text in MyGlobals.addresses[bisect.bisect_left(MyGlobals.addresses, (rel_id, '')):]:
+                            if addr_id==rel_id:
+                               name.address = Address( addr_text, addr_id )
+                               for addr_id, ed, partner_id in MyGlobals.back_edges[bisect.bisect_left(MyGlobals.back_edges, (name.address.addr_id, '', None)):]:
                                    if addr_id != name.address.addr_id: break
                                    if partner_id == person_id: continue
                                    p_id, partner_name = MyGlobals.nameid[bisect.bisect_left(MyGlobals.nameid, (partner_id,''))]

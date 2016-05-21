@@ -7,11 +7,14 @@ class MyGlobals(ModelBase):
     #intermediaries = tuple(csv.reader(open('/home/vaburov/panamapapers/static/Intermediaries.csv', 'rt'), delimiter=','))
     officers   = tuple(csv.reader(open('blog/static/Officers.csv', 'rt'), delimiter=','))
     nameid     = tuple(sorted([ (int(node_id), name) for [name, a,b,c, country, node_id, d] in officers[1:]]))
-    lastnames  = tuple(sorted([ (nm.strip('" ').rsplit(' ', 1)[-1].strip('" '), ''.join(nm.strip('" ').rsplit(' ', 1)[:-1]).strip(' "'), country, int(node_id))
+    lastnames  = tuple(sorted([ (nm.strip('" ').rsplit(' ', 1)[-1].strip('" ').upper(), ''.join(nm.strip('" ').rsplit(' ', 1)[:-1]).strip(' "'), country, int(node_id))
                                 for [nm, a,b,c, country, node_id, d] in officers[1:] if nm.strip() != '' ]))
 
-    entities   = tuple(csv.reader(open('blog/static/Entities.csv', 'rt'), delimiter=','))
-    addresses  = tuple(csv.reader(open('blog/static/Addresses.csv', 'rt'), delimiter=','))
+    ent        = tuple(csv.reader(open('blog/static/Entities.csv', 'rt'), delimiter=','))
+    entities   = tuple(sorted([ (int(e_id), name) for [name, a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18, e_id, a20] in ent[1:] ]))
+
+    addr       = tuple(csv.reader(open('blog/static/Addresses.csv', 'rt'), delimiter=','))
+    addresses  = tuple(sorted([ (int(a_id), adr) for [adr, a,b,c,d, a_id, e] in addr[1:] ]))
 
     edg             = list(csv.reader(open('blog/static/all_edges.csv', 'rt'), delimiter=','))
     edges           = tuple(sorted([ (int(a),b,int(c)) for [a,b,c] in edg[1:] ]))
