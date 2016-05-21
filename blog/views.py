@@ -12,9 +12,25 @@ from .forms import SearchForm
 from django import forms
 from django.shortcuts import redirect
 
-def str_aligned(s1, s2='', tab=20):
-    s = s1
-    return s+' '*max(1, tab-len(s))+s2+'\n'
+class Address:
+    def __init__(self, address, addr_id):
+        self.address = address
+        self.addr_id = addr_id
+        self.owners = []
+
+class Person:
+    def __init__(self, name, country, p_id):
+        self.name = name
+        self.country = country
+        self.p_id = p_id
+        self.assets = []
+        self.address = Address('',0)
+
+class Asset:
+    def __init__(self, asset, a_id):
+        self.asset = asset
+        self.a_id = a_id
+        self.owners = []
 
 # Create your views here.
 def post_list(request):
@@ -22,54 +38,85 @@ def post_list(request):
     if request.method == "POST":
         form = SearchForm(request.POST)
         if form.is_valid():
-            name = request.POST.get("search", "");
+            text.append([].append(MyGlobals.inittext))
+            query = request.POST.get("search", "")
             time = datetime.datetime.now()
-            count = 0;
+            name_list = []
 
-            for person in MyGlobals.officers:
-                if count > 50: break
-                if re.search(name, person[0], re.IGNORECASE):
-                    count += 1
-                    item = []
-                    item.append(str_aligned('<b>name:</b>', person[0])+'<br>')
-                    item.append(str_aligned('<b>country:</b>', person[4])+'<br>')
+            # search for the candidates
+            for item in MyGlobals.officers:
+                if re.search(query, item[0], re.IGNORECASE):
+                    name_list.append( Person(item[0], item[4], int(item[5])) )
+                if len(name_list) >= 50:
+                    break
 
-                    node_id = int(person[5])
+            for name in name_list:
+                for (person_id, edge, rel_id) in MyGlobals.edges[bisect.bisect_left(MyGlobals.edges, (name.p_id, "", None)):]:
+                    if person_id != name.p_id: break
+                    asset_found = False
+                    for asset in MyGlobals.entities:
+                        if asset[19]==str(rel_id):
+                            ast = Asset( asset[0], rel_id )
 
-                    for (node0, edge, node1) in MyGlobals.edges[bisect.bisect_left(MyGlobals.edges, (node_id, "", None)):]:
-                        if node0 != node_id: break
-                        found = False
+                            for (asst_id, ed, partner_id) in MyGlobals.back_edges[bisect.bisect_left(MyGlobals.back_edges, (ast.a_id, "", None)):]:
+                                if asst_id != ast.a_id: break
+                                if partner_id == person_id: continue
+                                p_id, partner_name = MyGlobals.nameid[bisect.bisect_left(MyGlobals.nameid, (partner_id,''))]
+                                if (p_id == partner_id):
+                                    ast.owners.append((partner_name, ed))
+                            name.assets.append(ast)
+                            asset_found = True
+                            break
 
-                        for asset in MyGlobals.entities:
-                            if asset[19]==str(node1):
-                                item.append(str_aligned('<b>'+edge.lower()+':</b>', asset[0])+'<br>')
-                                found = True
-                                break;
+                    if not asset_found:
+                        for address in MyGlobals.addresses:
+                            if address[5]==str(rel_id):
+                               name.address = Address( address[0], int(address[5]) )
+                               for (addr_id, ed, partner_id) in MyGlobals.back_edges[bisect.bisect_left(MyGlobals.back_edges, (name.address.addr_id, "", None)):]:
+                                   if addr_id != name.address.addr_id: break
+                                   if partner_id == person_id: continue
+                                   p_id, partner_name = MyGlobals.nameid[bisect.bisect_left(MyGlobals.nameid, (partner_id,''))]
+                                   if (p_id == partner_id):
+                                        name.address.owners.append((partner_name, ed))
+                               break
 
-                        if not found:
-                            for addr in MyGlobals.addresses:
-                                if addr[5]==str(node1):
-                                    item.append(str_aligned('<b>'+edge.lower()+':</b>', addr[0])+'<br>')
-                                    break;
+            for name in name_list:
+                item = []
+                item.append('<b>name:</b> ' + name.name + '<br>')
+                item.append('<b>country:</b> ' + name.country + '<br>')
 
-                        # search for partners
-                        li = ''
-                        for (n0, ed, n1) in MyGlobals.back_edges[bisect.bisect_left(MyGlobals.back_edges, (node1, "", None)):]:
-                            if n0 != node1: break
-                            if n1 != node0:
-                                # we found a partner
-                                for partner in MyGlobals.officers:
-                                    if str(n1) == partner[5]:
-                                        li += '<li>' + partner[0] + ' (' + ed.lower() + ')</li>'
-                                        break;
-                        if li != '':
-                            item.append('in company with:<ul>' + li + '</ul>')
+                li = ''
+                for owner, ed in name.address.owners:
+                    li += '<li>' + owner + ' (' + ed + ')</li>'
+                if li != '':
+                    li = ' <b>in company with:</b> <ul>' + li + '</ul>'
+                else:
+                    li = '<br>'
+                item.append('<b>address:</b> ' + name.address.address + li)
 
-                    item.append('<hr>')
-                    text.append(item)
-            item.append(str(count) + " entries found in " + str(datetime.datetime.now()-time))
-    else:
-        text.append([].append(MyGlobals.inittext))
+                for asset in name.assets:
+                    li = ''
+                    for owner, ed in asset.owners:
+                        li += '<li>' + owner + ' (' + ed + ')</li>'
+                    if li != '':
+                        li = ' <b>in company with:</b> <ul>' + li + '</ul>'
+                    else:
+                        li = '<br>'
+                    item.append('<b>asset:</b> ' + asset.asset + li)
+
+                item.append('<hr>')
+                text.append(item)
+            #endfor
+            delta = datetime.datetime.now()-time
+            item.append(str(len(name_list)) + " entries found in " + str(delta.seconds) + '.' + str(delta.microseconds/1000) + ' seconds')
+        else: #form is not valid
+            item = []
+            item.append(MyGlobals.inittext)
+            text.append(item)
+    else: # request.method is not "POST"
+        item = []
+        item.append(MyGlobals.inittext)
+        text.append(item)
 
     form = SearchForm(auto_id=False)
     posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('published_date')
