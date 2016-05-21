@@ -1,4 +1,6 @@
 import re
+import datetime
+import bisect
 from django.shortcuts import render
 from django.utils import timezone
 from django.db import models
@@ -9,7 +11,6 @@ from .forms import PostForm
 from .forms import SearchForm
 from django import forms
 from django.shortcuts import redirect
-import bisect
 
 def str_aligned(s1, s2='', tab=20):
     s = s1
@@ -17,17 +18,21 @@ def str_aligned(s1, s2='', tab=20):
 
 # Create your views here.
 def post_list(request):
+    text = []
     if request.method == "POST":
         form = SearchForm(request.POST)
         if form.is_valid():
-            text = []
             name = request.POST.get("search", "");
+            time = datetime.datetime.now()
+            count = 0;
 
             for person in MyGlobals.officers:
+                if count > 50: break
                 if re.search(name, person[0], re.IGNORECASE):
+                    count += 1
                     item = []
-                    item.append(str_aligned('<b>NAME:</b>', person[0]))
-                    item.append(str_aligned('COUNTRY:', person[4]))
+                    item.append(str_aligned('<b>name:</b>', person[0])+'<br>')
+                    item.append(str_aligned('<b>country:</b>', person[4])+'<br>')
 
                     node_id = int(person[5])
 
@@ -37,30 +42,34 @@ def post_list(request):
 
                         for asset in MyGlobals.entities:
                             if asset[19]==str(node1):
-                                item.append(str_aligned(edge.upper()+':', asset[0]))
+                                item.append(str_aligned('<b>'+edge.lower()+':</b>', asset[0])+'<br>')
                                 found = True
                                 break;
 
                         if not found:
                             for addr in MyGlobals.addresses:
                                 if addr[5]==str(node1):
-                                    item.append(str_aligned(edge.upper()+':', addr[0]))
+                                    item.append(str_aligned('<b>'+edge.lower()+':</b>', addr[0])+'<br>')
                                     break;
 
                         # search for partners
+                        li = ''
                         for (n0, ed, n1) in MyGlobals.back_edges[bisect.bisect_left(MyGlobals.back_edges, (node1, "", None)):]:
                             if n0 != node1: break
                             if n1 != node0:
                                 # we found a partner
                                 for partner in MyGlobals.officers:
                                     if str(n1) == partner[5]:
-                                        item.append(str_aligned("        "+partner[0], '('+ed.upper()+')', 40))
+                                        li += '<li>' + partner[0] + ' (' + ed.lower() + ')</li>'
                                         break;
+                        if li != '':
+                            item.append('in company with:<ul>' + li + '</ul>')
 
+                    item.append('<hr>')
                     text.append(item)
-
+            item.append(str(count) + " entries found in " + str(datetime.datetime.now()-time))
     else:
-        text = [].append([].append(MyGlobals.inittext))
+        text.append([].append(MyGlobals.inittext))
 
     form = SearchForm(auto_id=False)
     posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('published_date')

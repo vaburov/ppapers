@@ -4,15 +4,18 @@ import datetime
 import csv
 
 class MyGlobals(ModelBase):
-
-    officers        = tuple(csv.reader(open('/home/vaburov/panamapapers/static/Officers.csv', 'rt'), delimiter=','))
     #intermediaries = tuple(csv.reader(open('/home/vaburov/panamapapers/static/Intermediaries.csv', 'rt'), delimiter=','))
-    entities        = tuple(csv.reader(open('/home/vaburov/panamapapers/static/Entities.csv', 'rt'), delimiter=','))
-    addresses       = tuple(csv.reader(open('/home/vaburov/panamapapers/static/Addresses.csv', 'rt'), delimiter=','))
+    officers   = tuple(csv.reader(open('blog/static/Officers.csv', 'rt'), delimiter=','))
+    nameid     = tuple(sorted([ (int(node_id), name) for [name, a,b,c, country, node_id, d] in officers[1:]]))
+    lastnames  = tuple(sorted([ (nm.strip('" ').rsplit(' ', 1)[-1].strip('" '), ''.join(nm.strip('" ').rsplit(' ', 1)[:-1]).strip(' "'), country, int(node_id))
+                                for [nm, a,b,c, country, node_id, d] in officers[1:] if nm.strip() != '' ]))
 
-    edg             = list(csv.reader(open('/home/vaburov/panamapapers/static/all_edges.csv', 'rt'), delimiter=','))
-    edges           = tuple(sorted([(int(a),b,int(c)) for [a,b,c] in edg[1:]]))
-    back_edges      = tuple(sorted([(int(c),b,int(a)) for [a,b,c] in edg[1:]]))
+    entities   = tuple(csv.reader(open('blog/static/Entities.csv', 'rt'), delimiter=','))
+    addresses  = tuple(csv.reader(open('blog/static/Addresses.csv', 'rt'), delimiter=','))
+
+    edg             = list(csv.reader(open('blog/static/all_edges.csv', 'rt'), delimiter=','))
+    edges           = tuple(sorted([ (int(a),b,int(c)) for [a,b,c] in edg[1:] ]))
+    back_edges      = tuple(sorted([ (int(c),b,int(a)) for [a,b,c] in edg[1:] ]))
 
     inittext = 'Please, enter a name or any part of the name.'
 
@@ -26,7 +29,7 @@ class Post(models.Model):
             blank=True, null=True)
 
     def publish(self):
-        self.published_date = datetime.datetime.now() 
+        self.published_date = datetime.datetime.now()
         self.save()
 
     def __str__(self):

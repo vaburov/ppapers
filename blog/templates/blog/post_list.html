@@ -8,8 +8,9 @@
 
 {% autoescape off %}
 {% for item in text %}
-<pre>
-{% for line in item %}{{ line }}{% endfor %}</pre>
+    {% for line in item %}
+        {{ line }}
+    {% endfor %}
 {% endfor %}
 {% endautoescape %}
 
