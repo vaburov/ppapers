@@ -32,6 +32,9 @@ class Asset:
         self.a_id = a_id
         self.owners = []
 
+def glink(query):
+    return '<a href="https://www.google.ru/webhp?ion=1&espv=2&ie=UTF-8#q=' + query + '" target="_blank">' + query + '</a>'
+
 # Create your views here.
 def post_list(request):
     text = []
@@ -94,27 +97,34 @@ def post_list(request):
 
             for name in name_list:
                 item = []
-                item.append('<b>name:</b> ' + name.name + '<br>')
-                item.append('<b>country:</b> ' + name.country + '<br>')
+                lastname = name.name.strip('" ').rsplit(' ', 1)[-1].strip('" ').lower()
+                item.append('<b>name:</b> ' + glink(name.name) + '<br>')
+                if name.country :
+                    item.append('<b>country:</b> ' + name.country + '<br>')
 
                 li = ''
                 for owner, ed in name.address.owners:
-                    li += '<li>' + owner + ' (' + ed + ')</li>'
+                    li += '<li>' + owner + ' <small>(' + ed + ')</small></li>'
                 if li != '':
                     li = ' <b>in company with:</b> <ul>' + li + '</ul>'
                 else:
                     li = '<br>'
-                item.append('<b>address:</b> ' + name.address.address + li)
+                if name.address.address :
+                    item.append('<b>address:</b> ' + glink(name.address.address) + li)
 
                 for asset in name.assets:
                     li = ''
                     for owner, ed in asset.owners:
-                        li += '<li>' + owner + ' (' + ed + ')</li>'
+                        ownerlastname = owner.strip('" ').rsplit(' ', 1)[-1].strip('" ').lower()
+                        li += '<li>' + glink(owner) + ' <small>(' + ed + ')'
+                        li += '&nbsp;&nbsp;&nbsp;&nbsp;' + glink(lastname + '+' + ownerlastname) + ' | ' #+ glink(lastname + ' + ' + owner)
+                        #li += ' | ' + glink(name.name + '+' + ownerlastname) + ' | ' +
+                        li += glink(name.name.lower() + '+' + owner.lower()) +'</small></li>'
                     if li != '':
                         li = ' <b>in company with:</b> <ul>' + li + '</ul>'
                     else:
                         li = '<br>'
-                    item.append('<b>asset:</b> ' + asset.asset + li)
+                    item.append('<b>asset:</b> ' + glink(asset.asset) + li)
 
                 item.append('<hr>')
                 text.append(item)
