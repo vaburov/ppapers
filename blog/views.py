@@ -130,7 +130,7 @@ def post_list(request):
                 text.append(item)
             #endfor
             delta = datetime.datetime.now()-time
-            item.append(str(len(name_list)) + " entries found in " + str(delta.seconds) + '.' + str(delta.microseconds/1000) + ' seconds')
+            item.append(str(len(name_list)) + " entries found in " + str(delta.seconds) + '.' + str(int(delta.microseconds/1000)) + ' seconds')
         else: #form is not valid
             item = []
             item.append(MyGlobals.inittext)
