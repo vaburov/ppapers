@@ -12,6 +12,8 @@ from .forms import SearchForm
 from django import forms
 from django.shortcuts import redirect
 
+# comment
+
 class Address:
     def __init__(self, address, addr_id):
         self.address = address
